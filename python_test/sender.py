@@ -32,6 +32,12 @@ class senderClass:
             self.client_socket.connect((self.ip, self.port))
             self.client_socket.settimeout(1)
             print('connected ok')
+            
+            _result = self.client_socket.recv(1024)
+            _code,_cmd,_,_,_ = struct.unpack('<LBBBB', _result)
+            print(f'code : {_code}, cmd : {_cmd}')
+            
+            
         except Exception as ex:
             print(f'error : {ex}')
     def send_ping(self) :
@@ -87,11 +93,14 @@ if __name__ == '__main__' :
                 _sender.send_ping()
             elif _cmd == 'connect' :
                 _sender.connect()
+                
+                
+                
+                
             elif _cmd == 'close' :
                 _sender.close()
                 break
             elif _cmd == 'test1' :
-                
                 _sender.connect()
                 _sender.send_ping()
                 _sender.send_data()

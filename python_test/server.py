@@ -37,7 +37,7 @@ try:
         debug = config_data['debug']
         buff_size = config_data['buff_size']
 
-        _server = TcpSimpleImgProcServer('', port,buff_size=1024,debug_log=debug)
+        _server = TcpSimpleImgProcServer('', port,buff_size=buff_size,debug_log=debug)
         # _server.buff_size = 1024
         # _server.debug_log = debug_log
         _server.start()

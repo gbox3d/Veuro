@@ -13,20 +13,21 @@ from PIL import Image, ImageDraw, ImageFont
 from IPython.display import display
 
 #%%
+dictImgBuffer = {}
 
 def _PacketHandler(client_socket,debug_log = True,buff_size = 1024,checkcode = 20221223,defalutImg = None) :
     
+    global dictImgBuffer
     host,port = client_socket.getpeername()
-    print(f'client connected {host}:{port}')
+    print(f'client connected {host}:{port} , {client_socket.getsockname()}')
     
-    imgBuffer = defalutImg
+    imgBank = -1
+    # imgBuffer = dictImgBuffer[client_socket.getpeername()]
     bLoop = True
     
     while bLoop :
         
         try:
-    
-            # print('wait data')
             
             header = client_socket.recv(1024) # header size 16
             #close client
@@ -36,11 +37,12 @@ def _PacketHandler(client_socket,debug_log = True,buff_size = 1024,checkcode = 2
 
             _checkcode,_cmd,_cmd_p1,_cmd_p2,_cmd_p3  = unpack('<LBBBB',header[:8])
             
-            print(_checkcode,_cmd,_cmd_p1,_cmd_p2,_cmd_p3)
+            if debug_log == True: print(_checkcode,_cmd,_cmd_p1,_cmd_p2,_cmd_p3)
 
             if _checkcode == checkcode :
 
                 if _cmd == 0x01 : #req upload image
+                    imgBank = _cmd_p1
                     _data_size,_conf_thres,_iou_thres  = unpack('<Lff',header[8:20])
                     _data = header[32:]
                     
@@ -53,20 +55,25 @@ def _PacketHandler(client_socket,debug_log = True,buff_size = 1024,checkcode = 2
                         l = client_socket.recv(buff_size)
                         _data += l
                     
-                    imgBuffer = _data
+                    # imgBuffer = _data
+                    dictImgBuffer[imgBank] = _data
 
-                    if debug_log == True:
-                        if _data.__sizeof__() - _data_size == 33 :
-                            print('data recv complete')
-                        else :
-                            print('data recv error')
                     
-                    _packet = pack('<LBBBBL',checkcode,_cmd,0,0,0,len(_data)) # 8 byte
-                    client_socket.sendall(_packet)
+                    if _data.__sizeof__() - _data_size == 33 :
+                        if debug_log == True: print('data recv complete')
+                        _packet = pack('<LBBBBL',checkcode,_cmd,0,0,0,len(_data)) # 8 byte
+                        client_socket.sendall(_packet)
+                    else :
+                        if debug_log == True: print('data recv error')
+                        _packet = pack('<LBBBBL',checkcode,0,0,0,0,len(_data)) # 8 byte
+                        client_socket.sendall(_packet)
+                        
+                    
                 elif _cmd == 0x02 : #req download image
+                    imgBank = _cmd_p1
                     _packet = pack('<LBBBBL',checkcode,_cmd,0,0,0,len(imgBuffer)) # 8 byte
                     client_socket.sendall(_packet)
-                    client_socket.sendall( imgBuffer )
+                    client_socket.sendall( dictImgBuffer[imgBank] )
                     # client_socket.sendall( imgBuffer )
                 elif _cmd == 0x10:
                     print('process ping packet')
@@ -76,7 +83,7 @@ def _PacketHandler(client_socket,debug_log = True,buff_size = 1024,checkcode = 2
                     _packet = pack('<LBBBB',checkcode,0x99,0,0,0) # 8 byte
                     client_socket.sendall(_packet)
                     bLoop = False
-                    time.sleep(1)
+                    time.sleep(3)
             else :
                 print('check code error close client',client_socket.getpeername())
                 _packet = pack('<LBBBB',-1,0,0,0,0) # 8 byte
@@ -164,7 +171,6 @@ class TcpSimpleImgProcServer :
             print('closing server socket')
             self.server_socket.close()
             time.sleep(1)
-            
         
 #%%    
 if __name__ == "__main__":
