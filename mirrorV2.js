@@ -244,7 +244,7 @@ export default async function ({ port, context }) {
 
                         client_socket.write(res_packet)
 
-                        console.log(tempBuffer.length)
+                        // console.log(tempBuffer.length)
 
                         // if(tempBuffer.length > headerPacket_size) {
                         //     tempBuffer = tempBuffer.slice(headerPacket_size)
