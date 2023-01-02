@@ -1,6 +1,7 @@
 __pycache__/
 config.yaml
 *.jpg
+*.png
 
 package-lock.json
 
