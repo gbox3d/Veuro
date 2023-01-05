@@ -1,0 +1,10 @@
+### get system 
+GET https://localhost:21051/api/v1/help
+
+### get png image 
+GET https://localhost:21051/api/v1/getPngImage?bankId=0
+
+
+### Post test
+POST http://localhost:21030/rest/test
+test-name : gbox3d

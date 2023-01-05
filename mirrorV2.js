@@ -37,8 +37,6 @@ export default async function ({ port, context }) {
         console.error("uncaughtException (Node is alive)", err);
     });
 
-
-
     const server_socket = net.createServer(async function (client_socket) {
 
         let _currentBank = -1;
@@ -51,8 +49,6 @@ export default async function ({ port, context }) {
 
             if (_uploadSize > 0) {
 
-                // tempBuffer = Buffer.concat([tempBuffer, _packet])
-
                 if (tempBuffer) {
                     tempBuffer = Buffer.concat([tempBuffer, _packet])
                 }
@@ -62,89 +58,44 @@ export default async function ({ port, context }) {
 
                 _uploadSize -= _packet.length
 
-                // console.log(_packet.length, _uploadSize)
+                if (_uploadSize <= 0) {
 
-                if (_uploadSize == 0) {
-                    imageBuffer[_currentBank] = tempBuffer
-                    tempBuffer = null
-                    data_handler = _processPacketBase
-                    // console.log('upload complete')
+                    // console.log('upload complet ', _uploadSize)
+                    data_handler = _processPacketBase //header parsing mode
 
-                    //save image
-                    // fs.writeFileSync(`./image${_currentBank}.png`, imageBuffer[_currentBank])
-                    
-                    // let res_packet = Buffer.alloc(headerPacket_size + 4)
-                    // res_packet.writeUInt32LE(packet_checkCode, 0)
-                    // res_packet.writeUInt8(0x01, 4)
-                    // res_packet.writeUInt8(_currentBank, 5)
-                    // res_packet.writeUInt8(0, 6)
-                    // res_packet.writeUInt8(0, 7)
-                    // res_packet.writeUInt32LE(imageBuffer[_currentBank].length, 8)
-                    // client_socket.write(res_packet)
-                }
-                else if(_uploadSize < 0) {
-                    // console.log('error' , _uploadSize)
-
-                    const _data_end = tempBuffer.length + _uploadSize
-                    
-
-                    tempBuffer.copy(imageBuffer[_currentBank], 0, 0, _data_end)
-                    // tempBuffer = null
-
-                    
-                    let header_end = _data_end + imageHeader_size
-
-                    if( header_end < tempBuffer.length ) {
-
-                        let header_data = Buffer.alloc( imageHeader_size )
+                    if (_uploadSize == 0) {
+                        imageBuffer[_currentBank] = tempBuffer
+                        tempBuffer = null
+                    }
+                    else if (_uploadSize < 0) {
+                        const _data_end = tempBuffer.length + _uploadSize
+                        imageBuffer[_currentBank] = tempBuffer.slice(0, _data_end)
                         
-                        tempBuffer.copy(header_data, 0, _data_end, header_end)
+                        // tempBuffer = tempBuffer.slice(_data_end)
 
-                        // tempBuffer = null
+                        const _leftSize = 0 - _uploadSize
 
-                        if (header_data.readUInt32LE(0) === packet_checkCode) {
-
-                            const _cmd = header_data.readUInt8(4)
-                            if (_cmd === 0x01) {
-                                _currentBank = header_data.readUInt8(5)
-                                _uploadSize = header_data.readUInt32LE(8)
-
-                                const _extra_data = Buffer.alloc(tempBuffer.length - header_end)
-                                tempBuffer.copy(_extra_data, 0, header_end)
-                                _uploadSize -= _extra_data.length
-                                tempBuffer = _extra_data
-
-                                // console.log('extra data' , _extra_data.length, _uploadSize)
-                            }
-                            else {
-                                data_handler = _processPacketBase
-                                tempBuffer = null
-                            }
+                        if ( _leftSize >= headerPacket_size) {
+                            let _packet = tempBuffer.slice(_data_end)
+                            tempBuffer = null
+                            data_handler( _packet )
                         }
                         else {
-                            data_handler = _processPacketBase
-                            tempBuffer = null
-                            console.log('checkcode error'  )
-
+                            tempBuffer = tempBuffer.slice(_data_end)
                         }
-                    }
-                    else {
-
-                        console.log('header not ready')
-                        data_handler = _processPacketBase
-                        const _extra_data = Buffer.alloc(tempBuffer.length - _data_end)
-                        tempBuffer.copy(_extra_data, 0, _data_end)
+                        
                         
                     }
-
                 }
+
+
             }
 
         }
 
         function _processPacketBase(_packet) {
 
-            if(tempBuffer) {
+            if (tempBuffer) {
                 tempBuffer = Buffer.concat([tempBuffer, _packet])
             }
             else {
@@ -155,25 +106,42 @@ export default async function ({ port, context }) {
                 return
             }
 
-            const _headerPacket = tempBuffer
-
-            if(tempBuffer.length == headerPacket_size) {
-                // _headerPacket = tempBuffer
-                tempBuffer = null
-            }
-            else {
-                tempBuffer = tempBuffer.slice(headerPacket_size)
-            }
-
-            // tempBuffer.slice(0, headerPacket_size)
-            // const _header = Buffer.alloc(headerPacket_size)
-            // tempBuffer.copy(_header, 0, 0, headerPacket_size)
+            const _headerPacket = tempBuffer.slice(0, headerPacket_size)
 
 
             let _checkcode = _headerPacket.readUInt32LE(0)
 
-            if (_checkcode !== packet_checkCode)
+            if (_checkcode !== packet_checkCode) {
+
+                console.log('check code error')
+
+                // let _index = 0
+                // while(_index < tempBuffer.length - 4) {
+                //     _checkcode = tempBuffer.readUInt32LE(0)
+                //     if (_checkcode === packet_checkCode) {
+                //         tempBuffer = tempBuffer.slice(_index)
+                //         console.log('found check code')
+                //         break
+                //     }
+                //     _index++
+                // }
+
+                tempBuffer = null
                 return false
+
+            }
+            else {
+                if (tempBuffer.length == headerPacket_size) {
+                    tempBuffer = null
+                }
+                else {
+                    tempBuffer = tempBuffer.slice(headerPacket_size)
+                }
+
+            }
+
+            
+                
 
             let _cmd = _headerPacket.readUInt8(4)
 
@@ -184,21 +152,24 @@ export default async function ({ port, context }) {
                 case 0x01: //upload image
                     {
                         // const _bank_index = _packet.readUInt8(5)
-                        _currentBank = tempBuffer.readUInt8(5)
-                        _uploadSize = tempBuffer.readUInt32LE(8)
+                        _currentBank = _headerPacket.readUInt8(5)
+                        _uploadSize = _headerPacket.readUInt32LE(8)
 
-                        // if( _packet.length > imageHeader_size ) {
-                        //     const _extra_data = Buffer.alloc(_packet.length - imageHeader_size)
-                        //     _packet.copy(_extra_data, 0, imageHeader_size)
-                        //     _uploadSize -= _extra_data.length
-                        //     tempBuffer = _extra_data
-                        // }
-                        // else {
-                        //     tempBuffer = null
-                        // }
-
-                        data_handler = _processUploadPacket
-                        // imageBuffer[_currentBank] = null
+                        if(tempBuffer) {
+                            _uploadSize -= tempBuffer.length
+                            
+                            if (_uploadSize <= 0) {
+                                imageBuffer[_currentBank] = tempBuffer.slice(0, _uploadSize)
+                                tempBuffer = tempBuffer.slice(_uploadSize)
+                                data_handler = _processPacketBase
+                            }
+                            else {
+                                data_handler = _processUploadPacket
+                            }
+                        }
+                        else {
+                            data_handler = _processUploadPacket
+                        }
                     }
                     break;
                 case 0x02: //download image
@@ -253,7 +224,7 @@ export default async function ({ port, context }) {
                         // else {
                         //     tempBuffer = null
                         // }
-                        
+
                     }
                     break;
                 case 0x99://close
@@ -323,6 +294,7 @@ export default async function ({ port, context }) {
         }
 
     })
+    
     server_socket.listen(port);
 
     console.log('img mirror Server listening on ' + ':' + port);
@@ -332,13 +304,5 @@ export default async function ({ port, context }) {
         server_socket
     }
 }
-
-// export default {
-//     setup, getBuffer,setBuffer,getDetectedStatus
-// }
-// export { setup, getBuffer,setBuffer,getDetectedStatus }
-// export { getBuffer }
-
-
 
 

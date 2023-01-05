@@ -6,54 +6,82 @@ import fs from 'fs'
 
 import mirroSetup from './mirrorV2.js'
 
+//router
+import baseApiRouter from './routers/base.js'
 
-const theApp = {}
 
-// console.log(SocketIO_version);
-dotenv.config({ path: '.env' }); //환경 변수에 등록 
-console.log(`run mode : ${process.env.NODE_ENV}`);
+const theApp = {};
 
-const app = express()
 
-// app.use('/tipAndTrick', express.static('./tipAndTrick'));
-// app.use('/media', express.static(`./media`));
-// app.use('/webrtc', express.static(`./webrtc`));
+(async function () {
 
-app.use('/', express.static(`./public`));
+  // console.log(SocketIO_version);
+  dotenv.config({ path: '.env' }); //환경 변수에 등록 
+  console.log(`run mode : ${process.env.NODE_ENV}`);
 
-// console.log(__dirname)
+  theApp.server_info = {
+    tcp_port: process.env.TCP_PORT,
+    web_port: process.env.WEB_PORT,
+  }
 
-//순서 주의 맨 마지막에 나온다.
-app.all('*', (req, res) => {
-  res
-    .status(404)
-    .send('oops! resource not found')
-});
+  const app = express()
 
-let baseServer;
-if(process.env.SSL === 'True') {
-  console.log(`SSL mode ${process.env.SSL}`);
-  const options = {
-    key: fs.readFileSync(process.env.SSL_KEY),
-    cert: fs.readFileSync(process.env.SSL_CERT),
-    ca: fs.readFileSync(process.env.SSL_CA),
-  };
-  // https 서버를 만들고 실행시킵니다
-  baseServer = https.createServer(options, app)
+  // app.use('/tipAndTrick', express.static('./tipAndTrick'));
+  // app.use('/media', express.static(`./media`));
+  // app.use('/webrtc', express.static(`./webrtc`));
 
-}
-else {
+  app.use('/', express.static(`./public`));
+  app.use('/api/v1', baseApiRouter(theApp));
+
+
+  // console.log(__dirname)
+
+  //순서 주의 맨 마지막에 나온다.
+  app.all('*', (req, res) => {
+    res
+      .status(404)
+      .send('oops! resource not found')
+  });
+
+  let baseServer;
+  if (process.env.SSL === 'True') {
+    console.log(`SSL mode ${process.env.SSL}`);
+    const options = {
+      key: fs.readFileSync(process.env.SSL_KEY),
+      cert: fs.readFileSync(process.env.SSL_CERT),
+      ca: fs.readFileSync(process.env.SSL_CA),
+    };
+    // https 서버를 만들고 실행시킵니다
+    baseServer = https.createServer(options, app)
+
+  }
+  else {
     console.log('run http mode');
-  baseServer = http.createServer({}, app)
-}
+    baseServer = http.createServer({}, app)
+  }
 
 
-baseServer.listen(process.env.WEB_PORT, () => {
-  console.log(`server run at : ${process.env.WEB_PORT}`)
-});
+  await new Promise((resolve, reject) => {
 
-theApp.expressApp = app
+    baseServer.listen(process.env.WEB_PORT, () => {
+      console.log(`api server run at : ${process.env.WEB_PORT}`)
+      resolve();
+    });
+  })
 
-//mirror server
-mirroSetup({port:process.env.TCP_PORT,context:theApp})
+  theApp.expressApp = app
+
+  //mirror server
+  theApp.tcpMirro = await mirroSetup({ port: process.env.TCP_PORT, context: theApp })
+
+
+
+})()
+
+
+
+
+
+
+
 

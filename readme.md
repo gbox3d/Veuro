@@ -19,3 +19,12 @@ sudo kill -9 12345 # kill process
 fuser -k 21050/tcp
 
 ```
+
+
+## reference
+
+이미지 인코딩/디코딩 모듈  
+https://www.npmjs.com/package/image-encode  
+
+## TODO
+udp 처리  
