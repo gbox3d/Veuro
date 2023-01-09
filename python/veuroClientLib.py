@@ -7,26 +7,15 @@ import io
 from PIL import Image, ImageDraw, ImageFont
 from IPython.display import display
 
-
-checkcode = 20221223
-
-#%%
-with open('config.yaml', 'r') as f:
-        
-    config_data = yaml.load(f,Loader=yaml.FullLoader)
-    
-    print(config_data)
-    port = config_data['port']
-    remoteHost = config_data['remoteHost']
-    buff_size = config_data['buff_size']
-
-
 # %%
-class testerClass:
-    def __init__(self,ip,port,buff_size) :
+class veroTcpClient:
+    def __init__(self,ip,port,checkcode=20221223,buff_size=1024,bankId=0,timeout=1) :
         self.ip = ip
         self.port = port
         self.buff_size = buff_size
+        self.checkcode = checkcode
+        self.bankId = bankId
+        self.timeout = timeout
     def connect(self) :
         try :
             self.client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -34,42 +23,38 @@ class testerClass:
             self.client_socket.settimeout(1)
             print('connected ok')
             
-            _result = self.client_socket.recv(self.buff_size)
+            _result = self.client_socket.recv(1024)
             _code,_cmd = struct.unpack('<LB', _result[:5])
-            
             print(f'code : {_code}, cmd : {_cmd}')
             
         except Exception as ex:
             print(f'error : {ex}')
     def send_ping(self) :
-        _packpack = struct.pack('<LB', checkcode,0x10)
-        _packpack += bytearray(27)
+        _packpack = struct.pack('<LB', self.checkcode,0x10)
+        _packpack += bytearray(27) #padding
         self.client_socket.sendall(_packpack)
+        
         _result = self.client_socket.recv(self.buff_size)
-        # _code,_cmd,_,_,_ = struct.unpack('<LBBBB', _result)
-        # _code,_cmd,_,_,_,_,_,_,_,_,_,_, = struct.unpack('<LBBBB6L', _result)
         _code,_cmd = struct.unpack('<LB', _result[:5])
         print(f'code : {_code}, cmd : {_cmd}')
-    def send_data(self) :
-        with open('asakura.jpg', 'rb') as f:
-            _data = f.read()
-            _header = struct.pack('<L4BL', checkcode,0x01,0,0,0,len(_data))
-            _header += bytearray(20)
-            
-            self.client_socket.sendall(_header)
-            self.client_socket.sendall(_data)
-            
-        _result = self.client_socket.recv(1024)
-        _code,_cmd,_,_,_,buff_size = struct.unpack('<LBBBBL', _result)
         
-        print(f'code : {_code}, cmd : {_cmd} , buff_size : {buff_size}')
+    def send_data(self,data) :
+        _data = data
+        _header = struct.pack('<LBBBBL', self.checkcode,0x01,self.bankId,
+                              0x02, # 0x01 : jpg , 0x02 : png , 0x03 : raw
+                              0,len(_data))
+        _header += bytearray(20) #padding 12+20 = 32
+        self.client_socket.sendall(_header)
+        self.client_socket.sendall(_data)
+        
+        print('send data ok')
+        
     def download(self) :
         
-        _header = struct.pack('<L4B', checkcode,0x02,0,0,0)
-        _header += bytearray(24)
-        
-        
+        _header = struct.pack('<LBB', self.checkcode,0x02,self.bankId)
+        _header += bytearray(26) #padding 12+20 = 32
         self.client_socket.sendall(_header)
+        
         
         _result = self.client_socket.recv(self.buff_size)
         
@@ -86,19 +71,30 @@ class testerClass:
         
         
     def close(self) :
-        _packpack = struct.pack('<L4B', checkcode,0x99,0,0,0)
-        _packpack += bytearray(24)
+        _packpack = struct.pack('<LB', self.checkcode,0x99)
+        _packpack += bytearray(27) #padding
         self.client_socket.sendall(_packpack)
+        
         _result = self.client_socket.recv(self.buff_size)
         _code,_cmd = struct.unpack('<LB', _result[:5])
         print(f'code : {_code}, cmd : {_cmd}')
         self.client_socket.close()
-print('init ok')
+        
 #%%
 if __name__ == '__main__' :
-    _sender = testerClass(remoteHost,port,buff_size)
-    
-    
+    with open('config.yaml', 'r') as f:
+        
+        config_data = yaml.load(f,Loader=yaml.FullLoader)
+        
+        print(config_data)
+        server_ip = config_data['server_ip']
+        port = config_data['tcp_port']
+        buff_size = config_data['buff_size']
+        bankId = config_data['bankId']
+    checkcode = 20221223
+    _sender = veroTcpClient(server_ip,port,checkcode,buff_size,
+                            bankId=bankId,timeout=1
+                            )
     while True :
         _cmd = input('cmd : ')
         try :
@@ -112,7 +108,11 @@ if __name__ == '__main__' :
             elif _cmd == 'test1' :
                 _sender.connect()
                 _sender.send_ping()
-                _sender.send_data()
+                
+                with open('test.png', 'rb') as f:
+                    _data = f.read()
+                    _sender.send_data(_data)
+                    
                 _sender.close()
             elif _cmd == 'test2' :
                 _sender.connect()

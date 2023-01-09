@@ -1,5 +1,5 @@
 deviceId : 1004
-remoteHost : "ai.ubiqos.co.kr"
+remoteHost : ""
 port : 21050
 debug : False
 buff_size : 16384
