@@ -7,8 +7,6 @@ import io
 from PIL import Image, ImageDraw, ImageFont
 from IPython.display import display
 
-
-
 # %%
 class veroTcpClient:
     def __init__(self,ip,port,checkcode=20221223,buff_size=1024,bankId=0,timeout=1) :
@@ -41,23 +39,15 @@ class veroTcpClient:
         print(f'code : {_code}, cmd : {_cmd}')
         
     def send_data(self,data) :
-        # with open('test.png', 'rb') as f:
-        #     _data = f.read()
-        #     _header = struct.pack('<LBBBBL', self.checkcode,0x01,0,0,0,len(_data))
-        #     _header += bytearray(20) #padding 12+20 = 32
-        #     self.client_socket.sendall(_header)
-        #     self.client_socket.sendall(_data)
         _data = data
-        _header = struct.pack('<LBBBBL', self.checkcode,0x01,self.bankId,0,0,len(_data))
+        _header = struct.pack('<LBBBBL', self.checkcode,0x01,self.bankId,
+                              0x02, # 0x01 : jpg , 0x02 : png , 0x03 : raw
+                              0,len(_data))
         _header += bytearray(20) #padding 12+20 = 32
         self.client_socket.sendall(_header)
         self.client_socket.sendall(_data)
         
         print('send data ok')
-            
-        # _result = self.client_socket.recv(1024)
-        # _code,_cmd,_,_,_,buff_size = struct.unpack('<LBBBBL', _result)
-        # print(f'code : {_code}, cmd : {_cmd} , buff_size : {buff_size}')
         
     def download(self) :
         
@@ -98,10 +88,13 @@ if __name__ == '__main__' :
         
         print(config_data)
         server_ip = config_data['server_ip']
-        port = config_data['port']
+        port = config_data['tcp_port']
         buff_size = config_data['buff_size']
+        bankId = config_data['bankId']
     checkcode = 20221223
-    _sender = veroTcpClient(server_ip,port,checkcode,buff_size)
+    _sender = veroTcpClient(server_ip,port,checkcode,buff_size,
+                            bankId=bankId,timeout=1
+                            )
     while True :
         _cmd = input('cmd : ')
         try :
