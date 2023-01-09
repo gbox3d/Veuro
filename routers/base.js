@@ -38,14 +38,22 @@ export default function (_Context) {
             const _buffer = _Context.tcpMirro.getBuffer(bankId )
 
             if (_buffer) {
-                res.writeHead(200, { 'Content-Type': 'image/png' });
-                res.end(_buffer, 'binary');
+                res.writeHead(200, { 'Content-Type': 'image/png'
+             });
+                res.end(_buffer.data, 'binary');
             }
             else {
                 res.json({ r: 'fail', info: 'no buffer' })
             }
         }
         
+    })
+
+    router.get('/getImageList', (req, res) => {
+
+        const _list = _Context.tcpMirro.getBufferList()
+
+        res.json({ r: 'ok', info: _list })
     })
 
 

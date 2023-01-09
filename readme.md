@@ -8,7 +8,16 @@ camera -> sender app ->  server -> receiver app -> display
 
 ## Installation
 
+## packet
 
+checkcode(4) : 20221223  
+bankId(5) : 0~255  
+imgtype(6) : 1 = jpg, 2 = png, 3 = bmp  
+
+## buffer format
+type : 1 = jpg, 2 = png, 3 = bmp , 4 = mozaic  
+data : image data  
+mozaic_data : [..., {x, y, w,h,png_data}, ...]  
 ## kill process port
 
 ```bash

@@ -2,7 +2,10 @@
 GET https://localhost:21051/api/v1/help
 
 ### get png image 
-GET https://localhost:21051/api/v1/getPngImage?bankId=0
+GET https://localhost:21051/api/v1/getPngImage?bankId=2
+
+### get image list
+GET https://localhost:21051/api/v1/getImageList
 
 
 ### Post test
