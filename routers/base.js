@@ -22,12 +22,12 @@ export default function (_Context) {
     //     res.json({ r: 'ok',info : 'veuro api v1.0'})
     // })
 
-    router.get('/help',(req, res) => {
+    router.get('/help', (req, res) => {
         res.json({ r: 'ok', info: _Context.server_info })
     });
 
 
-    router.get('/getPngImage', (req, res) => {
+    router.get('/getImage', (req, res) => {
         const bankId = parseInt(req.query.bankId);
 
         if (bankId === undefined) {
@@ -35,18 +35,51 @@ export default function (_Context) {
             return;
         }
         else {
-            const _buffer = _Context.tcpMirro.getBuffer(bankId )
+            const _buffer = _Context.imageBuffer.getBuffer(bankId)
 
             if (_buffer) {
-                res.writeHead(200, { 'Content-Type': 'image/png'
-             });
-                res.end(_buffer.data, 'binary');
+                // res.writeHead(200, { 'Content-Type': 'image/png'});
+
+                if (_buffer.type === 1) {
+                    res.writeHead(200, { 'Content-Type': 'image/jpeg' });
+                    res.end(_buffer.data, 'binary');
+                }
+                else if (_buffer.type === 2) {
+                    res.writeHead(200, { 'Content-Type': 'image/png' });
+                    res.end(_buffer.data, 'binary');
+                }
+                else if(_buffer.type === 100) {
+                    
+
+                    const index = parseInt(req.query.index);
+                    if(index !== undefined) {
+                        res.writeHead(200, { 'Content-Type': 'image/png' });
+
+                        // console.log(_buffer.data[index].length)
+                        
+                        res.end(_buffer.data[index], 'binary');
+                    }
+                    else {
+                        res.writeHead(400, { 'Content-Type': 'text/html' });
+                        res.end('no index')
+                    }
+                    // res.end('no image')
+                }
+                else {
+                    res.writeHead(400, { 'Content-Type': 'text/html' });
+                    res.end('unkown type')
+                // res.json({ r: 'fail', info: 'unkown type' })
+                }
+                
             }
             else {
-                res.json({ r: 'fail', info: 'no buffer' })
+                //send 404 error
+                res.writeHead(400, { 'Content-Type': 'text/html' });
+                // res.json({ r: 'fail', info: 'no buffer' })
+                res.end('no buffer')
             }
         }
-        
+
     })
 
     router.get('/getImageList', (req, res) => {
@@ -55,6 +88,13 @@ export default function (_Context) {
 
         res.json({ r: 'ok', info: _list })
     })
+
+    router.get('/getUdpSubscribers', (req, res) => {
+            
+            const _list = _Context.udpMirro.getSubbcribers()
+    
+            res.json({ r: 'ok', info: _list })
+    });
 
 
     console.log('setup base api router')

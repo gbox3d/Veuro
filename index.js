@@ -4,13 +4,32 @@ import https from 'https'
 import http from 'http'
 import fs from 'fs'
 
-import mirroSetup from './mirrorV2.js'
+import mirroTcpSetup from './component/mirror_tcp.js'
+import mirroUdpSetup from './component/mirror_udp.js'
+import imgBufferSetup from './component/imgbuffer.js'
 
 //router
 import baseApiRouter from './routers/base.js'
 
+//catch unCaughtException , 
+//unCaughtException 예외 발생시 다운되지않도록하기
+process.on("uncaughtException", function (err) {
+  console.error("uncaughtException (Node is alive)", err);
+});
 
-const theApp = {};
+
+// const imageBuffer = []
+
+// imageBuffer[0] = {
+//     data : fs.readFileSync('./asakura.jpg'),
+//     type : 0
+// }
+
+const theApp = {
+  version : '0.0.1',
+  packet_checkCode : 20221223,
+  // imageBuffer : []
+};
 
 
 (async function () {
@@ -24,13 +43,16 @@ const theApp = {};
     web_port: process.env.WEB_PORT,
   }
 
+  theApp.imageBuffer = await imgBufferSetup({ context: theApp });
+
+  
   const app = express()
 
   // app.use('/tipAndTrick', express.static('./tipAndTrick'));
   // app.use('/media', express.static(`./media`));
   // app.use('/webrtc', express.static(`./webrtc`));
 
-  app.use('/', express.static(`./public`));
+  app.use('/', express.static(process.env.WEB_ROOT));
   app.use('/api/v1', baseApiRouter(theApp));
 
 
@@ -72,7 +94,8 @@ const theApp = {};
   theApp.expressApp = app
 
   //mirror server
-  theApp.tcpMirro = await mirroSetup({ port: process.env.TCP_PORT, context: theApp })
+  theApp.tcpMirro = await mirroTcpSetup({ port: process.env.TCP_PORT, context: theApp })
+  theApp.udpMirro = await mirroUdpSetup({ port: process.env.UDP_PORT, context: theApp })
 
 
 
