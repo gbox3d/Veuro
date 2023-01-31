@@ -37,10 +37,6 @@ osx udp 버퍼 늘리기  (default : 9216)
 sudo sysctl -w net.inet.udp.maxdgram=65535
 ```
 
-
-
-
-
 ## reference
 
 이미지 인코딩/디코딩 모듈  
@@ -51,3 +47,5 @@ https://awakening95.tistory.com/1
 
 ## TODO
 udp 처리  
+## 중단 사유
+udp 전송시 네트웍과부하를 유발시켜 해결방안을 찾기전까지는 중단
