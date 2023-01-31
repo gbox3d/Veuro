@@ -1,12 +1,17 @@
 ### get system 
 GET https://localhost:21051/api/v1/help
 
-### get png image 
-GET https://localhost:21051/api/v1/getPngImage?bankId=2
+### get image 
+GET https://localhost:21051/api/v1/getImage?bankId=0
+
+### get mozaic image 
+GET https://localhost:21051/api/v1/getImage?bankId=2&index=1
 
 ### get image list
 GET https://localhost:21051/api/v1/getImageList
 
+### get subscription list
+GET https://localhost:21051/api/v1/getUdpSubscribers
 
 ### Post test
 POST http://localhost:21030/rest/test

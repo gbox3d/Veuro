@@ -1,46 +1,36 @@
 // var net = require('net');
 import fs from 'fs';
 import net from 'net'
-import { type } from 'os';
+// import { type } from 'os';
 
 const packet_checkCode = 20221223
 const headerPacket_size = 32
-// const imageHeader_size = 32
 
-let imageBuffer = []
-let detected = []
 
-imageBuffer[0] = {
-    data : fs.readFileSync('./asakura.jpg'),
-    type : 0
-}
+// // console.log(`imageBuffer[0].length : ${imageBuffer[0].length}`)
 
-// console.log(`imageBuffer[0].length : ${imageBuffer[0].length}`)
+// // imageBuffer[1] = fs.readFileSync('./image2.jpg')
+// // imageBuffer[2] = fs.readFileSync('../sample/bird1.jpg')
+// // imageBuffer[3] = fs.readFileSync('../sample/bird1.jpg')
 
-// imageBuffer[1] = fs.readFileSync('./image2.jpg')
-// imageBuffer[2] = fs.readFileSync('../sample/bird1.jpg')
-// imageBuffer[3] = fs.readFileSync('../sample/bird1.jpg')
-
-function getDetectedStatus(_bank_index) {
-    return detected[_bank_index]
-}
-
-function getBuffer(_bank_index) {
-    return imageBuffer[_bank_index]
-}
-
-function setBuffer(_bank_index, data) {
-    imageBuffer[_bank_index] = data
-}
+// function getDetectedStatus(_bank_index) {
+//     return detected[_bank_index]
+// }
+// let imageBuffer;
 
 
 export default async function ({ port, context }) {
 
-    //catch unCaughtException , 
-    //unCaughtException 예외 발생시 다운되지않도록하기
-    process.on("uncaughtException", function (err) {
-        console.error("uncaughtException (Node is alive)", err);
-    });
+    const imageBuffer = context.imageBuffer.buffer
+
+    function getBuffer(_bank_index) {
+        return imageBuffer[_bank_index]
+    }
+    
+    function setBuffer(_bank_index, data) {
+        imageBuffer[_bank_index] = data
+    }
+    
 
     const server_socket = net.createServer(async function (client_socket) {
 
@@ -277,7 +267,8 @@ export default async function ({ port, context }) {
     console.log('img mirror Server listening on ' + ':' + port);
 
     return {
-        getBuffer, setBuffer, getDetectedStatus,
+        // getBuffer, 
+        // setBuffer,
         server_socket,
         getBufferList: () => {
 
