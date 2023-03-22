@@ -112,12 +112,12 @@ export default async function ({ port, context }) {
                         subcribers[_bank_id] = {
                             rinfo: rinfo
                         }
-
                         console.log(`add subcriber ${rinfo.address}:${rinfo.port} bank_id : ${_bank_id} `);
                     }
-
-
-
+                    else {
+                        console.log(`update subcriber ${rinfo.address}:${rinfo.port} bank_id : ${_bank_id} `);
+                        subcribers[_bank_id].rinfo = rinfo
+                    }   
                 }
                 break;
         }
