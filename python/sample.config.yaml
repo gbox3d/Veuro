@@ -3,3 +3,10 @@ remoteHost : ""
 port : 21050
 debug : False
 buff_size : 16384
+
+aicam_detect :
+  type : "yolov8"
+  model : "yolov8n.pt"
+  conf : 0.5
+  camType : "rs2"
+  vidSrc : 0

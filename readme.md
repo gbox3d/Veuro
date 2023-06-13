@@ -4,7 +4,7 @@
 
 data flow:  
 
-camera -> sender app ->  server -> receiver app -> display  
+camera -> sender app ->  [Veuro server] -> receiver app -> display  
 
 ## Installation
 
